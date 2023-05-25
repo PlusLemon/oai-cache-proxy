@@ -4,7 +4,6 @@ dotenv.config();
 
 const isDev = process.env.NODE_ENV !== "production";
 
-type PromptLoggingBackend = "google_sheets";
 export type DequeueMode = "fair" | "random" | "none";
 
 type Config = {
@@ -67,12 +66,22 @@ type Config = {
   logLevel?: "debug" | "info" | "warn" | "error";
   /** Whether prompts and responses should be logged to persistent storage. */
   promptLogging?: boolean;
-  /** Which prompt logging backend to use. */
-  promptLoggingBackend?: PromptLoggingBackend;
+  /** Which prompt logging backend to use.
+   *
+   * `google_sheets`: Logs prompts and responses to a Google Sheets spreadsheet.
+   *  This method is no longer recommended; see docs for more info.
+   *
+   * `airtable`: Logs prompts and responses to an Airtable table.
+   */
+  promptLoggingBackend?: "google_sheets" | "airtable";
   /** Base64-encoded Google Sheets API key. */
   googleSheetsKey?: string;
   /** Google Sheets spreadsheet ID. */
   googleSheetsSpreadsheetId?: string;
+  /** Airtable API key. */
+  airtableKey?: string;
+  /** Airtable base ID. */
+  airtableBaseId?: string;
   /** Whether to periodically check keys for usage and validity. */
   checkKeys?: boolean;
   /**
@@ -194,7 +203,7 @@ export async function assertConfigIsValid() {
   // Ensure forks which add new secret-like config keys don't unwittingly expose
   // them to users.
   for (const key of getKeys(config)) {
-    const maybeSensitive = ["key", "credentials", "secret", "password"].some(
+    const maybeSensitive = ["key", "credential", "secret", "password"].some(
       (sensitive) => key.toLowerCase().includes(sensitive)
     );
     const secured = new Set([...SENSITIVE_KEYS, ...OMITTED_KEYS]);
@@ -211,7 +220,10 @@ export async function assertConfigIsValid() {
  * Config keys that are masked on the info page, but not hidden as their
  * presence may be relevant to the user due to privacy implications.
  */
-export const SENSITIVE_KEYS: (keyof Config)[] = ["googleSheetsSpreadsheetId"];
+export const SENSITIVE_KEYS: (keyof Config)[] = [
+  "googleSheetsSpreadsheetId",
+  "airtableBaseId",
+];
 
 /**
  * Config keys that are not displayed on the info page at all, generally because
@@ -226,6 +238,7 @@ export const OMITTED_KEYS: (keyof Config)[] = [
   "checkKeys",
   "quotaDisplayMode",
   "googleSheetsKey",
+  "airtableKey",
   "firebaseKey",
   "firebaseRtdbUrl",
   "gatekeeperStore",
