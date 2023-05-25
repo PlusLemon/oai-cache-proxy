@@ -1,7 +1,9 @@
-# Warning
-**I strongly suggest against using this feature with a Google account that you care about.** Depending on the content of the prompts people submit, Google may flag the spreadsheet as containing inappropriate content. This seems to prevent you from sharing that spreadsheet _or any others on the account. This happened with my throwaway account during testing; the existing shared spreadsheet continues to work but even completely new spreadsheets are flagged and cannot be shared.
+# ⚠️ Warning ⚠️
+**I strongly suggest against using this feature with a Google account that you care about.** Depending on the content of the prompts people submit (which you obviously have no control over), Google may flag the spreadsheet as containing inappropriate content. If this happens, Google may suspend your ability to share the spreadsheet, block access to Google Sheets, or even suspend your entire Google account (this happened to my throwaway, though it may have been because it was very clearly a throwaway and used a burner SMS number).
 
-I'll be looking into alternative storage backends but you should not use this implementation with a Google account you care about, or even one remotely connected to your main accounts (as Google has a history of linking accounts together via IPs/browser fingerprinting). Use a VPN and completely isolated VM to be safe.
+**Be aware that Google has been known to link accounts through device/browser fingerprinting, so even a VPN may not be sufficient; if you must use this feature, do so entirely from an isolated VM and VPN with no other Google accounts logged in.**
+
+There are now other logging options available, so you should use those instead. I'm leaving this here for posterity, but I will not be providing any support for it.
 
 # Configuring Google Sheets Prompt Logging
 This proxy can log incoming prompts and model responses to Google Sheets. Some configuration on the Google side is required to enable this feature. The APIs used are free, but you will need a Google account and a Google Cloud Platform project.
@@ -10,7 +12,7 @@ NOTE: Concurrency is not supported. Don't connect two instances of the server to
 
 ## Prerequisites
 - A Google account
-  - **USE A THROWAWAY ACCOUNT!**
+  - **⚠️ USE A THROWAWAY ACCOUNT!**
 - A Google Cloud Platform project
 
 ### 0. Create a Google Cloud Platform Project
