@@ -1,1 +1,2 @@
-export * as sheets from "./sheets";
+export { sheets } from "./sheets";
+export { airtable } from "./airtable";

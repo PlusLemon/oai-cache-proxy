@@ -1,20 +1,35 @@
 /* Queues incoming prompts/responses and periodically flushes them to configured
  * logging backend. */
-
+import { config } from "../config";
 import { logger } from "../logger";
-import { PromptLogEntry } from ".";
-import { sheets } from "./backends";
+import { PromptLogBackend, PromptLogEntry } from ".";
+import { sheets, airtable } from "./backends";
 
 const FLUSH_INTERVAL = 1000 * 20; // 20 seconds
 const MAX_BATCH_SIZE = 100;
+const BACKENDS: Record<
+  NonNullable<typeof config.promptLoggingBackend>,
+  PromptLogBackend
+> = {
+  google_sheets: sheets,
+  airtable: airtable,
+};
 
 const queue: PromptLogEntry[] = [];
 const log = logger.child({ module: "log-queue" });
 
+let activeBackend: PromptLogBackend | null = null;
 let started = false;
 let timeoutId: NodeJS.Timeout | null = null;
 let retrying = false;
 let failedBatchCount = 0;
+
+const getBackend = () => {
+  if (!activeBackend) {
+    throw new Error("Log queue not initialized.");
+  }
+  return activeBackend;
+};
 
 export const enqueue = (payload: PromptLogEntry) => {
   if (!started) {
@@ -34,7 +49,7 @@ export const flush = async () => {
     const nextBatch = queue.splice(0, batchSize);
     log.info({ size: nextBatch.length }, "Submitting new batch.");
     try {
-      await sheets.appendBatch(nextBatch);
+      await getBackend().appendBatch(nextBatch);
       retrying = false;
     } catch (e: any) {
       if (retrying) {
@@ -64,7 +79,13 @@ export const flush = async () => {
 
 export const start = async () => {
   try {
-    await sheets.init(() => stop());
+    const selectedBackend = config.promptLoggingBackend;
+    if (!selectedBackend) {
+      throw new Error("No logging backend configured.");
+    }
+
+    activeBackend = BACKENDS[selectedBackend];
+    await getBackend().init(() => stop());
     log.info("Logging backend initialized.");
     started = true;
   } catch (e) {

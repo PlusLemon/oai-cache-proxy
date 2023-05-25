@@ -17,4 +17,9 @@ export interface PromptLogEntry {
   // TODO: temperature, top_p, top_k, etc.
 }
 
+export interface PromptLogBackend {
+  init(onStop: () => void): Promise<void>;
+  appendBatch(entries: PromptLogEntry[]): Promise<void>;
+}
+
 export * as logQueue from "./log-queue";

@@ -10,7 +10,7 @@ import type { CredentialBody } from "google-auth-library";
 import type { GaxiosResponse } from "googleapis-common";
 import { config } from "../../config";
 import { logger } from "../../logger";
-import { PromptLogEntry } from "..";
+import { PromptLogBackend, PromptLogEntry } from "..";
 
 // There is always a sheet called __index__ which contains a list of all the
 // other sheets. We use this rather than iterating over all the sheets in case
@@ -240,7 +240,7 @@ const createLogSheet = async () => {
   activeLogSheet = { sheetName, rows: [] };
 };
 
-export const appendBatch = async (batch: PromptLogEntry[]) => {
+const appendBatch = async (batch: PromptLogEntry[]) => {
   if (!activeLogSheet) {
     // Create a new log sheet if we don't have one yet.
     await createLogSheet();
@@ -310,40 +310,7 @@ const finalizeBatch = async () => {
   log.info({ sheetName, rowCount }, "Batch finalized.");
 };
 
-type LoadLogSheetArgs = {
-  sheetName: string;
-  /** The starting row to load. If omitted, loads all rows (expensive). */
-  fromRow?: number;
-};
-
-/** Not currently used. */
-export const loadLogSheet = async ({
-  sheetName,
-  fromRow = 2, // omit header row
-}: LoadLogSheetArgs) => {
-  const client = sheetsClient!;
-  const spreadsheetId = config.googleSheetsSpreadsheetId!;
-
-  const range = `${sheetName}!A${fromRow}:E`;
-  const res = await client.spreadsheets.values.get({
-    spreadsheetId: spreadsheetId,
-    range,
-  });
-  const data = assertData(res);
-  const values = data.values || [];
-  const rows = values.slice(1).map((row) => {
-    return {
-      model: row[0],
-      endpoint: row[1],
-      promptRaw: row[2],
-      promptFlattened: row[3],
-      response: row[4],
-    };
-  });
-  activeLogSheet = { sheetName, rows };
-};
-
-export const init = async (onStop: () => void) => {
+const init = async (onStop: () => void) => {
   if (sheetsClient) {
     return;
   }
@@ -420,3 +387,5 @@ function assertData<T = sheets_v4.Schema$ValueRange>(res: GaxiosResponse<T>) {
   }
   return res.data!;
 }
+
+export const sheets: PromptLogBackend = { init, appendBatch };
