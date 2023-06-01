@@ -18,10 +18,11 @@ export async function cacheGet(key: string): Promise<string> {
     }
     try {
         const response = await axios.get(`${CACHE_URL}?prompt=${key}`, { timeout: 3000 });
-        if (response.data == "null") {
-            return ""
+        if (response.data) {
+            return response.data;
+        }else {
+            return "";
         }
-        return response.data;
     } catch (error) {
         console.error(`Failed to get cache data for key ${key}:`, error);
         return "";

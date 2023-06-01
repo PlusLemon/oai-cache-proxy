@@ -15,8 +15,12 @@ export const cacheHiter = (req: Request, res: Response, next: NextFunction) => {
 
     cacheGet(cache_result)
         .then(result => {
-            logger.error("cache hinter hint!!!!");
-            res.status(200).json(cacheResp(result))
+            if (result == "") {
+                next();
+            } else {
+                logger.info("cache hinter hint!!!!", result);
+                res.status(200).json(cacheResp(result))
+            }
         })
         .catch(error => {
             logger.error("cache hinter ", error);
