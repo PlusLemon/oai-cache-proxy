@@ -11,6 +11,7 @@ import { incrementPromptCount } from "../../auth/user-store";
 import { isCompletionRequest, writeErrorResponse } from "../common";
 import { handleStreamedResponse } from "./handle-streamed-response";
 import { logPrompt } from "./log-prompt";
+import { cachePrompt } from "./log-prompt";
 
 const DECODER_MAP = {
   gzip: util.promisify(zlib.gunzip),
@@ -84,7 +85,7 @@ export const createOnProxyResHandler = (apiMiddleware: ProxyResMiddleware) => {
       if (req.isStreaming) {
         // `handleStreamedResponse` writes to the response and ends it, so
         // we can only execute middleware that doesn't write to the response.
-        middlewareStack.push(trackRateLimit, incrementKeyUsage, logPrompt);
+        middlewareStack.push(trackRateLimit, incrementKeyUsage, logPrompt, cachePrompt);
       } else {
         middlewareStack.push(
           trackRateLimit,
@@ -92,6 +93,7 @@ export const createOnProxyResHandler = (apiMiddleware: ProxyResMiddleware) => {
           incrementKeyUsage,
           copyHttpHeaders,
           logPrompt,
+          cachePrompt,
           ...apiMiddleware
         );
       }

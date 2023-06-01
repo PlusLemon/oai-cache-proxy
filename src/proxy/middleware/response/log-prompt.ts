@@ -6,6 +6,8 @@ import { isCompletionRequest } from "../common";
 import { ProxyResHandlerWithBody } from ".";
 import { logger } from "../../../logger";
 
+import { cachePut } from "../../../cache";
+
 /** If prompt logging is enabled, enqueues the prompt for logging. */
 export const logPrompt: ProxyResHandlerWithBody = async (
   _proxyRes,
@@ -38,6 +40,33 @@ export const logPrompt: ProxyResHandlerWithBody = async (
     model: response.model, // may differ from the requested model
     response: response.completion,
   });
+};
+
+export const cachePrompt: ProxyResHandlerWithBody = async (
+  _proxyRes,
+  req,
+  _res,
+  responseBody
+) => {
+  if (!config.cacheAllowed) {
+    return;
+  }
+  if (typeof responseBody !== "object") {
+    throw new Error("Expected body to be an object");
+  }
+
+  if (!isCompletionRequest(req)) {
+    return;
+  }
+
+  const promptPayload = getPromptForRequest(req);
+  const promptFlattened = flattenMessages(promptPayload);
+  const response = getResponseForService({
+    service: req.outboundApi,
+    body: responseBody,
+  });
+
+  cachePut(promptFlattened, response.completion)
 };
 
 type OaiMessage = {

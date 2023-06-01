@@ -113,6 +113,18 @@ type Config = {
    * Desination URL to redirect blocked requests to, for non-JSON requests.
    */
   blockRedirect?: string;
+  /**
+   * Whether to cache allowed requests.
+   */
+  cacheAllowed?: boolean;
+  /**
+   * Destination URL to cache requests to.
+   */
+  cacheHost?: string;
+  /**
+   * Skip the cache when the content of the request contains this key.
+   */
+  cacheSkipWord: string;
 };
 
 // To change configs, create a file called .env in the root directory.
@@ -152,6 +164,9 @@ export const config: Config = {
     "You must be over the age of majority in your country to use this service."
   ),
   blockRedirect: getEnvWithDefault("BLOCK_REDIRECT", "https://www.9gag.com"),
+  cacheAllowed: getEnvWithDefault("CACHE_ALLOWED", true),
+  cacheHost: getEnvWithDefault("CACHE_HOST", "http://0.0.0.0:8000"),
+  cacheSkipWord: getEnvWithDefault("CACHE_SKIP_WORD", "/skip_cache "),
 } as const;
 
 /** Prevents the server from starting if config state is invalid. */
