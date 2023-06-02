@@ -4,12 +4,23 @@ import { Request } from "express";
 
 const CACHE_URL = config.cacheHost;
 
+const CACHE_REQUEST_CONFIG = {
+    headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+    },
+    timeout: 3000,
+};
+
 export async function cachePut(key: string, value: any): Promise<void> {
     if (!config.cacheAllowed) {
         return;
     }
     const [result, contains] = checkSkipCache(key);
-    await axios.put(`${CACHE_URL}?prompt=${result}`, { value });
+    await axios.post(`${CACHE_URL}/put`, { 
+        "prompt": result,
+        "answer": value,
+     }, CACHE_REQUEST_CONFIG);
 }
 
 export async function cacheGet(key: string): Promise<string> {
@@ -17,9 +28,11 @@ export async function cacheGet(key: string): Promise<string> {
         return "";
     }
     try {
-        const response = await axios.get(`${CACHE_URL}?prompt=${key}`, { timeout: 3000 });
-        if (response.data) {
-            return JSON.parse(response.data).value;
+        const response = await axios.post(`${CACHE_URL}/get`, { 
+            "prompt": key,
+         }, CACHE_REQUEST_CONFIG);
+        if (response.data && response.data.answer) {
+            return response.data.answer;
         }else {
             return "";
         }
