@@ -6,7 +6,7 @@ import { isCompletionRequest } from "../common";
 import { ProxyResHandlerWithBody } from ".";
 import { logger } from "../../../logger";
 
-import { cachePut } from "../../../cache";
+import { cachePut, getCacheKey } from "../../../cache";
 
 /** If prompt logging is enabled, enqueues the prompt for logging. */
 export const logPrompt: ProxyResHandlerWithBody = async (
@@ -60,7 +60,7 @@ export const cachePrompt: ProxyResHandlerWithBody = async (
   }
 
   const promptPayload = getPromptForRequest(req);
-  const promptFlattened = flattenMessages(promptPayload);
+  const promptFlattened = getCacheKey(promptPayload);
   const response = getResponseForService({
     service: req.outboundApi,
     body: responseBody,

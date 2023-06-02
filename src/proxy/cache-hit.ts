@@ -1,11 +1,11 @@
 import { Request, Response, NextFunction } from "express";
-import { cacheGet, getPromptForRequest, flattenMessages, checkSkipCache, cacheResp  } from "../cache";
+import { cacheGet, getPromptForRequest, getCacheKey, checkSkipCache, cacheResp  } from "../cache";
 import { logger } from "../logger";
 
 export const cacheHiter = (req: Request, res: Response, next: NextFunction) => {
 
     const promptPayload = getPromptForRequest(req);
-    const promptFlattened = flattenMessages(promptPayload);
+    const promptFlattened = getCacheKey(promptPayload);
     const [cache_result, contains] = checkSkipCache(promptFlattened);
     
     if (contains) {

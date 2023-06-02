@@ -85,9 +85,10 @@ export const getPromptForRequest = (req: Request): string | OaiMessage[] => {
     }
 };
 
-export const flattenMessages = (messages: string | OaiMessage[]): string => {
+export const getCacheKey = (messages: string | OaiMessage[]): string => {
     if (typeof messages === "string") {
         return messages;
     }
-    return messages.map((m) => `${m.role}: ${m.content}`).join("\n");
+    return messages[messages.length - 1].content
+    // return messages.map((m) => `${m.role}: ${m.content}`).join("\n");
 };
