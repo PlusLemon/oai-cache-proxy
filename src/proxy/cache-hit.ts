@@ -18,17 +18,34 @@ export const cacheHiter = (req: Request, res: Response, next: NextFunction) => {
             if (result == "") {
                 next();
             } else {
-                logger.info({result: result}, "cache hinter hint!!!!");
-                if (res.headersSent) {
+                logger.info({result: result, messages: req.body.messages}, "cache hinter hint!!!!");
+                if (req.body.stream === true || req.body.stream === "true") {
+                    res.statusCode = 200;
+                    res.setHeader("Content-Type", "text/event-stream");
+                    res.setHeader("Cache-Control", "no-cache");
+                    res.setHeader("Connection", "keep-alive");
+                    res.setHeader("X-Accel-Buffering", "no"); // nginx-specific fix
+                    res.flushHeaders();
                     const fakeCacheEvent = buildFakeSseMessage(
-                      result,
-                      req
+                        {
+                            delta: { content: result },
+                            index: 0,
+                        },
+                        req
                     );
                     res.write(fakeCacheEvent);
+                    res.write(buildFakeSseMessage(
+                        {
+                            delta: {},
+                            index: 0,
+                            finish_reason: "stop",
+                        },
+                        req
+                    ));
                     res.end();
-                  } else {
+                } else {
                     res.status(200).json(cacheResp(req, result))
-                  }
+                }
             }
         })
         .catch(error => {
@@ -39,34 +56,21 @@ export const cacheHiter = (req: Request, res: Response, next: NextFunction) => {
   };
 
 function buildFakeSseMessage(
-    string: string,
+    choice: object,
     req: Request
     ) {
     let fakeEvent;
 
-    if (req.inboundApi === "anthropic") {
-        fakeEvent = {
-        completion: `\`\`\`\n[${string}]\n\`\`\`\n`,
-        stop_reason: "hint_cache",
-        truncated: false, // I've never seen this be true
-        stop: null,
-        model: req.body?.model,
-        log_id: "proxy-req-" + req.id,
-        };
-    } else {
-        fakeEvent = {
+
+    fakeEvent = {
         id: "chatcmpl-" + req.id,
         object: "chat.completion.chunk",
         created: Date.now(),
         model: req.body?.model,
         choices: [
-            {
-                delta: { content: `\`\`\`\n[${string}]\n\`\`\`\n` },
-                index: 0,
-                finish_reason: "hint_cache",
-            },
+            choice
         ],
-        };
-    }
+    };
+
     return `data: ${JSON.stringify(fakeEvent)}\n\n`;
 }

@@ -19,7 +19,7 @@ export async function cacheGet(key: string): Promise<string> {
     try {
         const response = await axios.get(`${CACHE_URL}?prompt=${key}`, { timeout: 3000 });
         if (response.data) {
-            return response.data;
+            return JSON.parse(response.data).value;
         }else {
             return "";
         }
