@@ -35,9 +35,9 @@ export function checkSkipCache(a: string): [string, boolean] {
     return [result, contains];
 }
 
-export function cacheResp(a: string): object {
+export function cacheResp(req: Request, a: string): object {
     return {
-        "id": "chatcmpl-cache",
+        id: "chatcmpl-" + req.id,
         "object": "chat.completion",
         "created": Date.now(),
         "choices": [{

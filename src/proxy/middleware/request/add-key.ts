@@ -1,6 +1,9 @@
 import { Key, keyPool } from "../../../key-management";
+
 import { isCompletionRequest } from "../common";
 import { ProxyRequestMiddleware } from ".";
+
+import { checkSkipCache  } from "../../../cache";
 
 /** Add a key that can service this request to the request object. */
 export const addKey: ProxyRequestMiddleware = (proxyReq, req) => {
@@ -49,10 +52,21 @@ export const addKey: ProxyRequestMiddleware = (proxyReq, req) => {
   }
 
   req.key = assignedKey;
+
+  if (assignedKey.service === "openai") {
+    const messages_len = req.body.messages.length;
+    const last_content = req.body.messages[messages_len - 1].content
+    const [cache_result, contains] = checkSkipCache(last_content)
+    if (contains) {
+      req.body.messages[messages_len - 1].content = cache_result
+    }
+  }
+  
   req.log.info(
     {
       key: assignedKey.hash,
       model: req.body?.model,
+      messages: req.body.messages,
       fromApi: req.inboundApi,
       toApi: req.outboundApi,
     },

@@ -18,8 +18,17 @@ export const cacheHiter = (req: Request, res: Response, next: NextFunction) => {
             if (result == "") {
                 next();
             } else {
-                logger.info("cache hinter hint!!!!", result);
-                res.status(200).json(cacheResp(result))
+                logger.info({result: result}, "cache hinter hint!!!!");
+                if (res.headersSent) {
+                    const fakeCacheEvent = buildFakeSseMessage(
+                      result,
+                      req
+                    );
+                    res.write(fakeCacheEvent);
+                    res.end();
+                  } else {
+                    res.status(200).json(cacheResp(req, result))
+                  }
             }
         })
         .catch(error => {
@@ -28,3 +37,36 @@ export const cacheHiter = (req: Request, res: Response, next: NextFunction) => {
         });
   
   };
+
+function buildFakeSseMessage(
+    string: string,
+    req: Request
+    ) {
+    let fakeEvent;
+
+    if (req.inboundApi === "anthropic") {
+        fakeEvent = {
+        completion: `\`\`\`\n[${string}]\n\`\`\`\n`,
+        stop_reason: "hint_cache",
+        truncated: false, // I've never seen this be true
+        stop: null,
+        model: req.body?.model,
+        log_id: "proxy-req-" + req.id,
+        };
+    } else {
+        fakeEvent = {
+        id: "chatcmpl-" + req.id,
+        object: "chat.completion.chunk",
+        created: Date.now(),
+        model: req.body?.model,
+        choices: [
+            {
+                delta: { content: `\`\`\`\n[${string}]\n\`\`\`\n` },
+                index: 0,
+                finish_reason: "hint_cache",
+            },
+        ],
+        };
+    }
+    return `data: ${JSON.stringify(fakeEvent)}\n\n`;
+}
